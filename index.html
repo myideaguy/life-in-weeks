@@ -92,6 +92,28 @@
   .sub-actions { display: flex; justify-content: center; align-items: center; gap: 10px; margin-top: 14px; }
   .link-btn { background: none; border: none; color: var(--muted); font-family: inherit; font-size: 14px; cursor: pointer; text-decoration: underline; padding: 4px; }
   .link-btn:hover { color: var(--ink); }
+
+  /* reclaim-guide email opt-in */
+  .ask-block { background: #fbf7ee; border: 1px solid #ecd9b3; border-radius: 16px; padding: 26px 28px; margin-top: 32px; }
+  .ask-block.collected { background: #ecf8f1; border-color: #cfe9da; }
+  .ask-headline { font-size: 19px; font-weight: 600; line-height: 1.45; color: var(--ink); }
+  .ask-headline b { font-weight: 800; }
+  .ask-sub { color: var(--muted); font-size: 15px; margin: 8px 0 0; line-height: 1.5; }
+  .ask-sub b { color: var(--ink); font-weight: 700; }
+  .ask-title { font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; font-weight: 800; color: #8a6b1f; margin: 22px 0 10px; }
+  .ask-bullets { list-style: none; padding: 0; margin: 0 0 18px; }
+  .ask-bullets li { padding-left: 26px; position: relative; margin: 7px 0; font-size: 15px; line-height: 1.5; color: var(--ink); }
+  .ask-bullets li::before { content: '✓'; position: absolute; left: 4px; color: #1fa364; font-weight: 800; }
+  .ask-bullets li b { font-weight: 800; }
+  .ask-peek { background: #fff5e1; border-left: 3px solid #d4a64b; padding: 12px 14px; margin: 0 0 20px; font-size: 14px; line-height: 1.5; border-radius: 0 8px 8px 0; }
+  .ask-peek b { font-weight: 700; color: var(--ink); }
+  .ask-form { display: flex; gap: 10px; flex-wrap: wrap; }
+  .ask-form input { flex: 1; min-width: 180px; padding: 12px 14px; font-size: 15px; border: 1px solid var(--line); border-radius: 10px; font-family: inherit; background: #fff; color: var(--ink); }
+  .ask-form input:invalid:not(:placeholder-shown) { border-color: var(--accent); }
+  .ask-form button { flex: none; }
+  .ask-skip { display: block; margin: 14px auto 0; }
+  .ask-success { background: #e5f4ed; border: 1px solid #b3e1cc; color: #1a6240; border-radius: 12px; padding: 16px 18px; font-size: 16px; line-height: 1.5; }
+  .ask-success b { font-weight: 800; }
   .btn { padding: 12px 18px; border-radius: 10px; border: 1px solid var(--line); background: #fff; font-size: 15px; font-weight: 600; cursor: pointer; font-family: inherit; }
   .btn.primary { background: var(--ink); color: #fff; border-color: var(--ink); }
   .btn.primary[disabled] { opacity: 0.45; cursor: not-allowed; }
@@ -219,6 +241,38 @@
     <p class="chart-cap" id="chartCap">Each row is one year &middot; left-to-right = the 52 weeks of that year</p>
     <div class="legend" id="legend"></div>
     <div class="chart" id="chart"></div>
+
+    <div class="ask-block" id="askBlock">
+      <div class="ask-headline">
+        Of your <b id="askYrsLeft">35</b> remaining years, only <b id="askFree">9.6</b> are truly free.
+      </div>
+      <p class="ask-sub">
+        About <b id="askLost">16</b> years go to phone, work, commute, and chores. Most of that is reclaimable.
+      </p>
+
+      <div class="ask-title">YOUR PERSONALIZED RECLAIM GUIDE</div>
+      <ul class="ask-bullets">
+        <li>Tactics for each of YOUR time-eaters &mdash; sized to YOUR numbers</li>
+        <li>Apply 1 small change per category &rarr; reclaim about <b id="askReclaim">5</b> years (~<b id="askReclaimWk">260</b> weeks)</li>
+        <li>3 books matched to YOUR biggest categories (incl. <i>Four Thousand Weeks</i>)</li>
+        <li>Your "one-week starter plan" &mdash; one tiny win in each category</li>
+        <li>A fresh chart every birthday so you can watch those years come back</li>
+      </ul>
+
+      <div class="ask-peek">
+        <b>Free peek:</b> Gray-scale your phone screen. Studies show ~30% less use &mdash; for you that's about <b id="askPhoneSave">1.7</b> years back from this one trick.
+      </div>
+
+      <form class="ask-form" id="askForm" novalidate>
+        <input type="email" id="askEmail" placeholder="your email address" required autocomplete="email" />
+        <button type="submit" class="btn primary">Send my guide &rarr;</button>
+      </form>
+      <button class="link-btn ask-skip" id="askSkip" type="button">no thanks, just my result</button>
+
+      <div class="ask-success" id="askSuccess" hidden>
+        <b>Got it.</b> Your personalized Reclaim Guide is on the way.
+      </div>
+    </div>
 
     <div class="actions">
       <button class="btn primary" id="shareBtn" disabled>Download my image &mdash; coming next</button>
@@ -742,6 +796,18 @@ function render() {
   $('freeYears').textContent = yrs(freeWeeks).toFixed(1);
   $('freeWeeks').textContent = fmt(freeWeeks);
   $('freeDays').textContent = fmt(Math.round(freeWeeks * 7));
+
+  // Reclaim Guide ask block — dynamic copy from current state
+  if ($('askYrsLeft')) {
+    const nonSleepConsumed = buckets.filter(b => b.id !== 'sleep').reduce((s, b) => s + b.weeks, 0);
+    $('askYrsLeft').textContent = yrs(weeksLeft).toFixed(0);
+    $('askFree').textContent = yrs(freeWeeks).toFixed(1);
+    $('askLost').textContent = yrs(nonSleepConsumed).toFixed(0);
+    const reclaimWeeks = Math.round(nonSleepConsumed * 0.25);
+    $('askReclaim').textContent = (reclaimWeeks / 52).toFixed(0);
+    $('askReclaimWk').textContent = fmt(reclaimWeeks);
+    $('askPhoneSave').textContent = phoneBucket ? yrs(phoneBucket.weeks * 0.30).toFixed(1) : '0';
+  }
   const estEl = $('leEst');
   if (estEl) estEl.textContent = `→ ~${le} yrs est.`;
 
@@ -767,6 +833,71 @@ function render() {
   });
 
   writeURL();
+}
+
+// ---------- Reclaim Guide opt-in ----------
+// TODO: paste your Formspree endpoint here once you sign up at https://formspree.io
+// (30 seconds — free, no credit card. Until then submissions land in console + localStorage.)
+const RECLAIM_ENDPOINT = '';
+
+function setupAskBlock() {
+  const form = $('askForm');
+  if (!form) return;
+  const success = $('askSuccess');
+  const block = $('askBlock');
+  const skip = $('askSkip');
+
+  // Already-submitted users skip the form
+  if (localStorage.getItem('reclaimSubmitted')) {
+    form.style.display = 'none';
+    skip.style.display = 'none';
+    success.hidden = false;
+    block.classList.add('collected');
+  }
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const email = $('askEmail').value.trim();
+    if (!email || !email.includes('@')) { $('askEmail').focus(); return; }
+
+    const payload = {
+      email,
+      country,
+      sex: $('sex').value,
+      birthday: $('bday').value,
+      le: $('le').value,
+      health: HEALTH.map(h => h.id + ':' + h.sel).join(','),
+      habits: CONSUMERS.map(c => c.id + ':' + (c.on ? c.hours : 'off')).join(','),
+      sharedUrl: location.href,
+      timestamp: new Date().toISOString(),
+    };
+
+    // Always log + persist locally — we never lose a submission
+    console.log('[Reclaim Guide signup]', payload);
+    try {
+      const stored = JSON.parse(localStorage.getItem('reclaimSubmissions') || '[]');
+      stored.push(payload);
+      localStorage.setItem('reclaimSubmissions', JSON.stringify(stored));
+    } catch (_) {}
+
+    if (RECLAIM_ENDPOINT) {
+      try {
+        await fetch(RECLAIM_ENDPOINT, {
+          method: 'POST',
+          headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+      } catch (_) {}
+    }
+
+    form.style.display = 'none';
+    skip.style.display = 'none';
+    success.hidden = false;
+    block.classList.add('collected');
+    localStorage.setItem('reclaimSubmitted', '1');
+  });
+
+  skip.addEventListener('click', () => { block.style.display = 'none'; });
 }
 
 function toast(msg) {
@@ -901,6 +1032,7 @@ readURL();
 buildToggles();
 buildHealthInline();
 buildCountryInline();
+setupAskBlock();
 $('bday').addEventListener('input', render);
 $('sex').addEventListener('change', () => { applyEstimate(); render(); });
 $('countrySelect').addEventListener('change', () => {
