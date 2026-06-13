@@ -152,6 +152,17 @@
   .q-choices button.sel { border-color: var(--ink); background: var(--ink); color: #fff; }
   .q-avg { font-size: 13px; color: var(--muted); margin-top: 2px; }
 
+  /* country picker (quiz) */
+  #q-csearch { width: 100%; max-width: 400px; padding: 12px 16px; font-size: 16px; border: 1px solid var(--line); border-radius: 12px; font-family: inherit; text-align: left; background: #fff; }
+  .q-clist { width: 100%; max-width: 400px; max-height: 320px; overflow-y: auto; border: 1px solid var(--line); border-radius: 12px; background: #fff; }
+  .q-clist button { width: 100%; padding: 11px 14px; border: none; background: #fff; font-family: inherit; font-size: 15px; text-align: left; cursor: pointer; border-bottom: 1px solid var(--line); display: flex; align-items: center; gap: 10px; }
+  .q-clist button:last-child { border-bottom: none; }
+  .q-clist button:hover { background: #f4efe5; }
+  .q-clist button.sel { background: var(--ink); color: #fff; }
+  .q-clist .cflag { font-size: 18px; line-height: 1; flex: none; }
+  .q-clist .cname { flex: 1; }
+  .q-empty { padding: 16px; text-align: center; color: var(--muted); font-size: 14px; }
+
   /* collapsible panel sections */
   .acc { border-top: 1px solid var(--line); }
   .acc-head { width: 100%; display: flex; align-items: center; gap: 10px; padding: 16px 0 6px; background: none; border: none; cursor: pointer; font-family: inherit; }
@@ -231,6 +242,10 @@
           <option value="male" selected>Male</option>
         </select>
       </div>
+      <div class="field">
+        <label for="countrySelect">Country</label>
+        <select id="countrySelect"></select>
+      </div>
       <input type="hidden" id="le" value="79" />
 
       <div class="acc" id="accHealth">
@@ -282,8 +297,223 @@ const CONSUMERS = [
 const $ = (id) => document.getElementById(id);
 const state = {};
 
-// life-expectancy baselines (years) and lifestyle adjustments
-const LE_BASE = { male: 76, female: 81 };
+// life-expectancy baselines (years) by country and sex.
+// Approximate WHO Global Health Observatory life-expectancy-at-birth figures,
+// rounded to whole years.
+const COUNTRIES = [
+  { code: 'AF', name: 'Afghanistan',          m: 60, f: 64 },
+  { code: 'AL', name: 'Albania',              m: 75, f: 80 },
+  { code: 'DZ', name: 'Algeria',              m: 76, f: 78 },
+  { code: 'AD', name: 'Andorra',              m: 80, f: 84 },
+  { code: 'AO', name: 'Angola',               m: 60, f: 66 },
+  { code: 'AG', name: 'Antigua and Barbuda',  m: 76, f: 79 },
+  { code: 'AR', name: 'Argentina',            m: 73, f: 80 },
+  { code: 'AM', name: 'Armenia',              m: 73, f: 79 },
+  { code: 'AU', name: 'Australia',            m: 81, f: 85 },
+  { code: 'AT', name: 'Austria',              m: 79, f: 84 },
+  { code: 'AZ', name: 'Azerbaijan',           m: 71, f: 76 },
+  { code: 'BS', name: 'Bahamas',              m: 72, f: 77 },
+  { code: 'BH', name: 'Bahrain',              m: 77, f: 80 },
+  { code: 'BD', name: 'Bangladesh',           m: 71, f: 75 },
+  { code: 'BB', name: 'Barbados',             m: 75, f: 79 },
+  { code: 'BY', name: 'Belarus',              m: 70, f: 79 },
+  { code: 'BE', name: 'Belgium',              m: 79, f: 84 },
+  { code: 'BZ', name: 'Belize',               m: 71, f: 77 },
+  { code: 'BJ', name: 'Benin',                m: 60, f: 65 },
+  { code: 'BT', name: 'Bhutan',               m: 70, f: 74 },
+  { code: 'BO', name: 'Bolivia',              m: 68, f: 74 },
+  { code: 'BA', name: 'Bosnia and Herzegovina', m: 75, f: 80 },
+  { code: 'BW', name: 'Botswana',             m: 64, f: 70 },
+  { code: 'BR', name: 'Brazil',               m: 73, f: 79 },
+  { code: 'BN', name: 'Brunei',               m: 73, f: 78 },
+  { code: 'BG', name: 'Bulgaria',             m: 71, f: 78 },
+  { code: 'BF', name: 'Burkina Faso',         m: 60, f: 64 },
+  { code: 'BI', name: 'Burundi',              m: 60, f: 65 },
+  { code: 'CV', name: 'Cabo Verde',           m: 73, f: 79 },
+  { code: 'KH', name: 'Cambodia',             m: 67, f: 73 },
+  { code: 'CM', name: 'Cameroon',             m: 62, f: 65 },
+  { code: 'CA', name: 'Canada',               m: 80, f: 84 },
+  { code: 'CF', name: 'Central African Republic', m: 53, f: 56 },
+  { code: 'TD', name: 'Chad',                 m: 53, f: 55 },
+  { code: 'CL', name: 'Chile',                m: 78, f: 83 },
+  { code: 'CN', name: 'China',                m: 76, f: 81 },
+  { code: 'CO', name: 'Colombia',             m: 74, f: 80 },
+  { code: 'KM', name: 'Comoros',              m: 64, f: 68 },
+  { code: 'CG', name: 'Congo',                m: 63, f: 66 },
+  { code: 'CR', name: 'Costa Rica',           m: 78, f: 82 },
+  { code: 'CI', name: 'Côte d’Ivoire',   m: 60, f: 63 },
+  { code: 'HR', name: 'Croatia',              m: 76, f: 81 },
+  { code: 'CU', name: 'Cuba',                 m: 76, f: 80 },
+  { code: 'CY', name: 'Cyprus',               m: 80, f: 84 },
+  { code: 'CZ', name: 'Czech Republic',       m: 76, f: 82 },
+  { code: 'CD', name: 'DR Congo',             m: 60, f: 64 },
+  { code: 'DK', name: 'Denmark',              m: 80, f: 84 },
+  { code: 'DJ', name: 'Djibouti',             m: 65, f: 68 },
+  { code: 'DM', name: 'Dominica',             m: 73, f: 77 },
+  { code: 'DO', name: 'Dominican Republic',   m: 70, f: 77 },
+  { code: 'EC', name: 'Ecuador',              m: 73, f: 79 },
+  { code: 'EG', name: 'Egypt',                m: 70, f: 74 },
+  { code: 'SV', name: 'El Salvador',          m: 67, f: 77 },
+  { code: 'GQ', name: 'Equatorial Guinea',    m: 60, f: 63 },
+  { code: 'ER', name: 'Eritrea',              m: 65, f: 70 },
+  { code: 'EE', name: 'Estonia',              m: 73, f: 82 },
+  { code: 'SZ', name: 'Eswatini',             m: 56, f: 65 },
+  { code: 'ET', name: 'Ethiopia',             m: 65, f: 70 },
+  { code: 'FJ', name: 'Fiji',                 m: 65, f: 71 },
+  { code: 'FI', name: 'Finland',              m: 79, f: 85 },
+  { code: 'FR', name: 'France',               m: 79, f: 85 },
+  { code: 'GA', name: 'Gabon',                m: 65, f: 70 },
+  { code: 'GM', name: 'Gambia',               m: 60, f: 64 },
+  { code: 'GE', name: 'Georgia',              m: 70, f: 79 },
+  { code: 'DE', name: 'Germany',              m: 78, f: 83 },
+  { code: 'GH', name: 'Ghana',                m: 64, f: 67 },
+  { code: 'GR', name: 'Greece',               m: 79, f: 84 },
+  { code: 'GD', name: 'Grenada',              m: 73, f: 77 },
+  { code: 'GT', name: 'Guatemala',            m: 68, f: 74 },
+  { code: 'GN', name: 'Guinea',               m: 60, f: 63 },
+  { code: 'GW', name: 'Guinea-Bissau',        m: 60, f: 64 },
+  { code: 'GY', name: 'Guyana',               m: 64, f: 69 },
+  { code: 'HT', name: 'Haiti',                m: 61, f: 66 },
+  { code: 'HN', name: 'Honduras',             m: 71, f: 76 },
+  { code: 'HK', name: 'Hong Kong',            m: 83, f: 88 },
+  { code: 'HU', name: 'Hungary',              m: 73, f: 79 },
+  { code: 'IS', name: 'Iceland',              m: 81, f: 84 },
+  { code: 'IN', name: 'India',                m: 70, f: 73 },
+  { code: 'ID', name: 'Indonesia',            m: 68, f: 73 },
+  { code: 'IR', name: 'Iran',                 m: 75, f: 78 },
+  { code: 'IQ', name: 'Iraq',                 m: 71, f: 74 },
+  { code: 'IE', name: 'Ireland',              m: 80, f: 84 },
+  { code: 'IL', name: 'Israel',               m: 81, f: 84 },
+  { code: 'IT', name: 'Italy',                m: 81, f: 85 },
+  { code: 'JM', name: 'Jamaica',              m: 73, f: 76 },
+  { code: 'JP', name: 'Japan',                m: 81, f: 87 },
+  { code: 'JO', name: 'Jordan',               m: 72, f: 76 },
+  { code: 'KZ', name: 'Kazakhstan',           m: 70, f: 77 },
+  { code: 'KE', name: 'Kenya',                m: 64, f: 69 },
+  { code: 'KI', name: 'Kiribati',             m: 65, f: 72 },
+  { code: 'KW', name: 'Kuwait',               m: 79, f: 82 },
+  { code: 'KG', name: 'Kyrgyzstan',           m: 69, f: 77 },
+  { code: 'LA', name: 'Laos',                 m: 67, f: 71 },
+  { code: 'LV', name: 'Latvia',               m: 70, f: 79 },
+  { code: 'LB', name: 'Lebanon',              m: 73, f: 77 },
+  { code: 'LS', name: 'Lesotho',              m: 51, f: 60 },
+  { code: 'LR', name: 'Liberia',              m: 60, f: 63 },
+  { code: 'LY', name: 'Libya',                m: 70, f: 75 },
+  { code: 'LI', name: 'Liechtenstein',        m: 81, f: 85 },
+  { code: 'LT', name: 'Lithuania',            m: 71, f: 80 },
+  { code: 'LU', name: 'Luxembourg',           m: 80, f: 84 },
+  { code: 'MO', name: 'Macau',                m: 82, f: 88 },
+  { code: 'MG', name: 'Madagascar',           m: 64, f: 68 },
+  { code: 'MW', name: 'Malawi',               m: 62, f: 68 },
+  { code: 'MY', name: 'Malaysia',             m: 73, f: 78 },
+  { code: 'MV', name: 'Maldives',             m: 78, f: 82 },
+  { code: 'ML', name: 'Mali',                 m: 60, f: 64 },
+  { code: 'MT', name: 'Malta',                m: 80, f: 84 },
+  { code: 'MH', name: 'Marshall Islands',     m: 64, f: 68 },
+  { code: 'MR', name: 'Mauritania',           m: 64, f: 68 },
+  { code: 'MU', name: 'Mauritius',            m: 71, f: 78 },
+  { code: 'MX', name: 'Mexico',               m: 71, f: 77 },
+  { code: 'FM', name: 'Micronesia',           m: 67, f: 68 },
+  { code: 'MD', name: 'Moldova',              m: 67, f: 75 },
+  { code: 'MC', name: 'Monaco',               m: 84, f: 87 },
+  { code: 'MN', name: 'Mongolia',             m: 67, f: 76 },
+  { code: 'ME', name: 'Montenegro',           m: 75, f: 79 },
+  { code: 'MA', name: 'Morocco',              m: 73, f: 76 },
+  { code: 'MZ', name: 'Mozambique',           m: 57, f: 63 },
+  { code: 'MM', name: 'Myanmar',              m: 64, f: 70 },
+  { code: 'NA', name: 'Namibia',              m: 60, f: 66 },
+  { code: 'NR', name: 'Nauru',                m: 60, f: 68 },
+  { code: 'NP', name: 'Nepal',                m: 69, f: 72 },
+  { code: 'NL', name: 'Netherlands',          m: 80, f: 83 },
+  { code: 'NZ', name: 'New Zealand',          m: 80, f: 84 },
+  { code: 'NI', name: 'Nicaragua',            m: 71, f: 77 },
+  { code: 'NE', name: 'Niger',                m: 61, f: 63 },
+  { code: 'NG', name: 'Nigeria',              m: 53, f: 55 },
+  { code: 'KP', name: 'North Korea',          m: 70, f: 76 },
+  { code: 'MK', name: 'North Macedonia',      m: 73, f: 78 },
+  { code: 'NO', name: 'Norway',               m: 81, f: 84 },
+  { code: 'OM', name: 'Oman',                 m: 75, f: 78 },
+  { code: 'PK', name: 'Pakistan',             m: 65, f: 68 },
+  { code: 'PW', name: 'Palau',                m: 71, f: 79 },
+  { code: 'PS', name: 'Palestine',            m: 73, f: 76 },
+  { code: 'PA', name: 'Panama',               m: 76, f: 82 },
+  { code: 'PG', name: 'Papua New Guinea',     m: 63, f: 68 },
+  { code: 'PY', name: 'Paraguay',             m: 70, f: 75 },
+  { code: 'PE', name: 'Peru',                 m: 73, f: 78 },
+  { code: 'PH', name: 'Philippines',          m: 67, f: 74 },
+  { code: 'PL', name: 'Poland',               m: 73, f: 81 },
+  { code: 'PT', name: 'Portugal',             m: 78, f: 84 },
+  { code: 'QA', name: 'Qatar',                m: 79, f: 82 },
+  { code: 'RO', name: 'Romania',              m: 71, f: 79 },
+  { code: 'RU', name: 'Russia',               m: 67, f: 77 },
+  { code: 'RW', name: 'Rwanda',               m: 64, f: 68 },
+  { code: 'KN', name: 'Saint Kitts and Nevis', m: 70, f: 76 },
+  { code: 'LC', name: 'Saint Lucia',          m: 71, f: 77 },
+  { code: 'VC', name: 'Saint Vincent and the Grenadines', m: 70, f: 75 },
+  { code: 'WS', name: 'Samoa',                m: 70, f: 74 },
+  { code: 'SM', name: 'San Marino',           m: 81, f: 85 },
+  { code: 'ST', name: 'São Tomé and Príncipe', m: 67, f: 72 },
+  { code: 'SA', name: 'Saudi Arabia',         m: 75, f: 78 },
+  { code: 'SN', name: 'Senegal',              m: 65, f: 70 },
+  { code: 'RS', name: 'Serbia',               m: 74, f: 79 },
+  { code: 'SC', name: 'Seychelles',           m: 70, f: 77 },
+  { code: 'SL', name: 'Sierra Leone',         m: 59, f: 62 },
+  { code: 'SG', name: 'Singapore',            m: 81, f: 86 },
+  { code: 'SK', name: 'Slovakia',             m: 73, f: 80 },
+  { code: 'SI', name: 'Slovenia',             m: 78, f: 84 },
+  { code: 'SB', name: 'Solomon Islands',      m: 70, f: 74 },
+  { code: 'SO', name: 'Somalia',              m: 53, f: 58 },
+  { code: 'ZA', name: 'South Africa',         m: 62, f: 67 },
+  { code: 'KR', name: 'South Korea',          m: 81, f: 87 },
+  { code: 'SS', name: 'South Sudan',          m: 56, f: 59 },
+  { code: 'ES', name: 'Spain',                m: 80, f: 85 },
+  { code: 'LK', name: 'Sri Lanka',            m: 73, f: 80 },
+  { code: 'SD', name: 'Sudan',                m: 64, f: 68 },
+  { code: 'SR', name: 'Suriname',             m: 69, f: 75 },
+  { code: 'SE', name: 'Sweden',               m: 81, f: 85 },
+  { code: 'CH', name: 'Switzerland',          m: 82, f: 86 },
+  { code: 'SY', name: 'Syria',                m: 71, f: 77 },
+  { code: 'TW', name: 'Taiwan',               m: 77, f: 84 },
+  { code: 'TJ', name: 'Tajikistan',           m: 70, f: 74 },
+  { code: 'TZ', name: 'Tanzania',             m: 64, f: 68 },
+  { code: 'TH', name: 'Thailand',             m: 75, f: 82 },
+  { code: 'TL', name: 'Timor-Leste',          m: 66, f: 71 },
+  { code: 'TG', name: 'Togo',                 m: 61, f: 64 },
+  { code: 'TO', name: 'Tonga',                m: 69, f: 75 },
+  { code: 'TT', name: 'Trinidad and Tobago',  m: 71, f: 77 },
+  { code: 'TN', name: 'Tunisia',              m: 75, f: 79 },
+  { code: 'TR', name: 'Turkey',               m: 75, f: 81 },
+  { code: 'TM', name: 'Turkmenistan',         m: 67, f: 72 },
+  { code: 'TV', name: 'Tuvalu',               m: 65, f: 70 },
+  { code: 'UG', name: 'Uganda',               m: 61, f: 66 },
+  { code: 'UA', name: 'Ukraine',              m: 67, f: 77 },
+  { code: 'AE', name: 'United Arab Emirates', m: 78, f: 81 },
+  { code: 'GB', name: 'United Kingdom',       m: 79, f: 83 },
+  { code: 'US', name: 'United States',        m: 75, f: 80 },
+  { code: 'UY', name: 'Uruguay',              m: 75, f: 81 },
+  { code: 'UZ', name: 'Uzbekistan',           m: 70, f: 75 },
+  { code: 'VU', name: 'Vanuatu',              m: 69, f: 72 },
+  { code: 'VE', name: 'Venezuela',            m: 70, f: 77 },
+  { code: 'VN', name: 'Vietnam',              m: 71, f: 79 },
+  { code: 'YE', name: 'Yemen',                m: 64, f: 68 },
+  { code: 'ZM', name: 'Zambia',               m: 60, f: 65 },
+  { code: 'ZW', name: 'Zimbabwe',             m: 56, f: 63 },
+];
+
+function countryByCode(code) { return COUNTRIES.find(c => c.code === code) || COUNTRIES.find(c => c.code === 'US'); }
+function flagEmoji(code) {
+  if (!code || code.length !== 2) return '';
+  return String.fromCodePoint(0x1F1E6 + code.charCodeAt(0) - 65, 0x1F1E6 + code.charCodeAt(1) - 65);
+}
+function detectCountry() {
+  const candidates = [navigator.language, ...(navigator.languages || [])];
+  for (const lang of candidates) {
+    const m = (lang || '').match(/-([A-Z]{2})$/);
+    if (m && COUNTRIES.some(c => c.code === m[1])) return m[1];
+  }
+  return 'US';
+}
+let country = detectCountry();
 const HEALTH = [
   { id: 'smoking',  label: 'Smoking',  sel: 'never',
     options: [ { v: 'never', t: 'Never', d: 0 }, { v: 'former', t: 'I quit', d: -3 }, { v: 'current', t: 'Yes', d: -10 } ] },
@@ -298,13 +528,18 @@ const HEALTH = [
 function healthDelta() {
   return HEALTH.reduce((s, h) => { const o = h.options.find((o) => o.v === h.sel); return s + (o ? o.d : 0); }, 0);
 }
-function estimateLE() { return Math.max(40, Math.round((LE_BASE[$('sex').value] || 78) + healthDelta())); }
+function estimateLE() {
+  const c = countryByCode(country);
+  const base = $('sex').value === 'female' ? c.f : c.m;
+  return Math.max(40, Math.round(base + healthDelta()));
+}
 function applyEstimate() { $('le').value = estimateLE(); }
 
 function readURL() {
   const p = new URLSearchParams(location.search);
   if (p.get('b')) $('bday').value = p.get('b');
   if (p.get('s')) $('sex').value = p.get('s');
+  if (p.get('c') && COUNTRIES.some(c => c.code === p.get('c'))) country = p.get('c');
   if (p.get('h')) {
     const hs = p.get('h').split('_');
     CONSUMERS.forEach((c, i) => { if (hs[i] !== undefined && hs[i] !== '') c.hours = parseFloat(hs[i]); });
@@ -326,6 +561,7 @@ function writeURL() {
   const p = new URLSearchParams();
   p.set('b', $('bday').value);
   p.set('s', $('sex').value);
+  p.set('c', country);
   p.set('le', $('le').value);
   p.set('h', CONSUMERS.map(c => c.hours).join('_'));
   p.set('on', CONSUMERS.filter(c => c.on).map(c => c.id).join(','));
@@ -361,6 +597,14 @@ function buildToggles() {
     });
     list.appendChild(row);
   });
+}
+
+function buildCountryInline() {
+  const sel = $('countrySelect');
+  if (!sel) return;
+  sel.innerHTML = COUNTRIES.map(c =>
+    `<option value="${c.code}" ${c.code === country ? 'selected' : ''}>${flagEmoji(c.code)} ${c.name}</option>`
+  ).join('');
 }
 
 function buildHealthInline() {
@@ -535,7 +779,8 @@ function toast(msg) {
 // ---------- guided quiz ----------
 const QUIZ = [
   { type: 'date',   q: 'When were you born?',                       sub: 'Takes about a minute. Each square on the next screen is one week of your life.' },
-  { type: 'life',   q: 'What is your gender?',                      sub: 'We estimate your lifespan from real statistics — no guessing needed.' },
+  { type: 'life',    q: 'What is your gender?',                     sub: 'We estimate your lifespan from real statistics — no guessing needed.' },
+  { type: 'country', q: 'Where do you live?',                       sub: 'Where you live is one of the biggest single factors for lifespan.' },
   { type: 'health', cid: 'smoking', q: 'Do you smoke?',                     sub: "It's the single biggest lifestyle factor for lifespan." },
   { type: 'health', cid: 'alcohol', q: 'How often do you drink alcohol?',   sub: 'A rough ballpark is fine.' },
   { type: 'health', cid: 'diet',    q: 'How would you describe your diet?', sub: 'Be honest with yourself.' },
@@ -580,6 +825,28 @@ function renderQuiz() {
     };
     $('q-slider').addEventListener('input', (e) => upd(e.target.value));
     upd(c.hours);
+  } else if (step.type === 'country') {
+    body.innerHTML =
+      `<input type="text" id="q-csearch" class="q-input" placeholder="Type to search countries…" autocomplete="off"/>
+       <div class="q-clist" id="q-clist"></div>`;
+    const renderList = (filter) => {
+      const f = (filter || '').toLowerCase().trim();
+      const matches = COUNTRIES.filter(c => !f || c.name.toLowerCase().includes(f));
+      $('q-clist').innerHTML = matches.map(c =>
+        `<button type="button" data-code="${c.code}" class="${c.code === country ? 'sel' : ''}"><span class="cflag">${flagEmoji(c.code)}</span><span class="cname">${c.name}</span></button>`
+      ).join('') || '<div class="q-empty">No match</div>';
+      $('q-clist').querySelectorAll('button').forEach(b => b.addEventListener('click', () => {
+        country = b.dataset.code;
+        $('q-clist').querySelectorAll('button').forEach(x => x.classList.toggle('sel', x.dataset.code === country));
+        if ($('countrySelect')) $('countrySelect').value = country;
+        applyEstimate();
+        render();
+      }));
+      const cur = $('q-clist').querySelector('button.sel');
+      if (cur && !f) cur.scrollIntoView({ block: 'nearest' });
+    };
+    renderList('');
+    $('q-csearch').addEventListener('input', e => renderList(e.target.value));
   } else if (step.type === 'health') {
     const h = HEALTH.find((x) => x.id === step.cid);
     body.innerHTML =
@@ -614,6 +881,7 @@ function startQuiz() {
 function finishQuiz() {
   buildToggles();
   buildHealthInline();
+  buildCountryInline();
   $('panel').classList.remove('open');
   render();
   const ov = $('quiz');
@@ -632,8 +900,14 @@ const arrivedShared = location.search.length > 1;
 readURL();
 buildToggles();
 buildHealthInline();
+buildCountryInline();
 $('bday').addEventListener('input', render);
 $('sex').addEventListener('change', () => { applyEstimate(); render(); });
+$('countrySelect').addEventListener('change', () => {
+  country = $('countrySelect').value;
+  applyEstimate();
+  render();
+});
 document.querySelectorAll('.acc-head').forEach((h) => h.addEventListener('click', () => {
   $(h.dataset.acc).classList.toggle('open');
 }));
