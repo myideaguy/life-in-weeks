@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Your Life in Weeks</title>
+<style>
+  :root {
+    --bg: #faf8f4;
+    --ink: #1c1a17;
+    --muted: #8a8378;
+    --line: #e6e1d8;
+    --card: #ffffff;
+    --lived: #33312c;
+    --future: #e4ded3;
+    --free: #1fa364;
+    --accent: #e25c45;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, Helvetica, Arial, sans-serif;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 40px 24px 80px; }
+  header { text-align: center; margin-bottom: 32px; }
+  h1 { font-size: 38px; letter-spacing: -0.02em; margin: 0 0 8px; font-weight: 800; }
+  .sub { color: var(--muted); font-size: 17px; margin: 0; }
+
+  .stage { max-width: 640px; margin: 0 auto; }
+
+  .panel { display: none; background: #fff; border: 1px solid var(--line); border-radius: 16px; padding: 22px; margin-top: 24px; text-align: left; }
+  .panel.open { display: block; }
+  .field { margin-bottom: 18px; }
+  .field label { display: block; font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); margin-bottom: 6px; }
+  .field input[type="date"], .field input[type="number"], .field select {
+    width: 100%; padding: 10px 12px; font-size: 15px; border: 1px solid var(--line);
+    border-radius: 10px; background: #fff; color: var(--ink); font-family: inherit;
+  }
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+  .toggles { border-top: 1px solid var(--line); padding-top: 16px; margin-top: 4px; }
+  .toggles h3 { font-size: 13px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); margin: 0 0 4px; }
+  .hint { font-size: 12px; color: var(--muted); margin: 0 0 8px; }
+  .swatch { width: 13px; height: 13px; border-radius: 3px; flex: none; }
+  .consumer { border-bottom: 1px solid var(--line); }
+  .consumer:last-child { border-bottom: none; }
+  .consumer-head { display: flex; align-items: center; gap: 10px; padding: 9px 0; cursor: pointer; font-size: 15px; }
+  .consumer-head input[type="checkbox"] { width: 17px; height: 17px; accent-color: var(--ink); cursor: pointer; flex: none; }
+  .consumer-head .cname { font-weight: 500; }
+  .consumer-head .amt { margin-left: auto; font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .consumer-slider { display: none; align-items: center; gap: 12px; padding: 0 2px 12px 27px; }
+  .consumer.on .consumer-slider { display: flex; }
+  .consumer-slider input[type="range"] { flex: 1; min-width: 0; }
+  .consumer-slider .val { font-size: 12px; color: var(--muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .consumer-slider .val b { color: var(--ink); font-weight: 700; }
+
+  .summary { background: #fff; border: 1px solid var(--line); border-radius: 16px; padding: 24px 26px; margin-bottom: 22px; }
+  .reveal-lead { margin-bottom: 14px; text-align: center; }
+  .reveal-age.pulse { animation: agepulse 0.9s ease; }
+  @keyframes agepulse { 0% { transform: scale(0.9); opacity: 0.3; } 60% { transform: scale(1.02); } 100% { transform: scale(1); opacity: 1; } }
+  .reveal-label { font-size: 13px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; font-weight: 700; }
+  .reveal-age { font-size: 52px; font-weight: 800; letter-spacing: -0.02em; line-height: 1.05; }
+  .reveal-yo { font-size: 22px; font-weight: 600; color: var(--muted); }
+  .reveal-bullets { list-style: none; padding: 0; margin: 0 0 16px; }
+  .reveal-bullets li { position: relative; padding-left: 20px; margin: 7px 0; font-size: 15px; line-height: 1.45; }
+  .reveal-bullets li::before { content: '•'; position: absolute; left: 5px; color: #c9c2b5; }
+  .reveal-bullets li b { font-weight: 800; }
+  .reveal-bullets li.warn { color: var(--accent); font-weight: 600; }
+  .reveal-bullets li.warn::before { color: var(--accent); }
+
+  .legend { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px 18px; margin: 4px 0 16px; font-size: 13px; color: var(--muted); }
+  .legend .item { display: flex; align-items: center; gap: 7px; }
+
+  .chart-cap { font-size: 13px; color: var(--muted); margin: 0 0 14px; text-align: center; }
+  .view-toggle { display: flex; width: fit-content; margin: 0 auto 14px; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+  .view-toggle button { padding: 7px 20px; border: none; border-left: 1px solid var(--line); background: #fff; font-family: inherit; font-size: 14px; cursor: pointer; color: var(--ink); }
+  .view-toggle button:first-child { border-left: none; }
+  .view-toggle button.sel { background: var(--ink); color: #fff; }
+  .chart { }
+  .grow { display: flex; align-items: center; gap: 8px; margin-bottom: 2.5px; }
+  .age { width: 22px; text-align: right; font-size: 10px; color: var(--muted); flex: none; font-variant-numeric: tabular-nums; }
+  .weeks { flex: 1; display: grid; grid-template-columns: repeat(52, 1fr); gap: 2.5px; }
+  .cell { aspect-ratio: 1 / 1; border-radius: 1.5px; background: var(--future); }
+  .cell.lived { background: var(--lived); }
+  .cell.free { background: var(--free); }
+
+  .actions { display: flex; gap: 12px; margin-top: 24px; flex-wrap: wrap; justify-content: center; }
+  .sub-actions { display: flex; justify-content: center; align-items: center; gap: 10px; margin-top: 14px; }
+  .link-btn { background: none; border: none; color: var(--muted); font-family: inherit; font-size: 14px; cursor: pointer; text-decoration: underline; padding: 4px; }
+  .link-btn:hover { color: var(--ink); }
+  .btn { padding: 12px 18px; border-radius: 10px; border: 1px solid var(--line); background: #fff; font-size: 15px; font-weight: 600; cursor: pointer; font-family: inherit; }
+  .btn.primary { background: var(--ink); color: #fff; border-color: var(--ink); }
+  .btn.primary[disabled] { opacity: 0.45; cursor: not-allowed; }
+  .note { font-size: 13px; color: var(--muted); margin-top: 10px; }
+  .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(20px); background: var(--ink); color: #fff; padding: 12px 20px; border-radius: 10px; opacity: 0; transition: all .25s; font-size: 14px; pointer-events: none; }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* free-time hero */
+  .hero { margin-top: 16px; padding: 18px 20px; background: #ecf8f1; border: 1px solid #cfe9da; border-radius: 14px; }
+  .hero-label { font-size: 13px; text-transform: uppercase; letter-spacing: 0.05em; color: #2a7d56; font-weight: 700; }
+  .hero-num { font-size: 36px; font-weight: 800; color: #157a4a; line-height: 1.1; margin: 2px 0 4px; }
+  .hero-sub { font-size: 14px; color: #3a7d5e; }
+  .hero-sub b { color: #157a4a; }
+  .hero.pulse { animation: heropulse 1.1s ease; }
+  @keyframes heropulse {
+    0% { transform: scale(1); }
+    30% { transform: scale(1.035); box-shadow: 0 0 0 7px rgba(31,163,100,0.16); }
+    100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(31,163,100,0); }
+  }
+
+  /* guided quiz */
+  .quiz { position: fixed; inset: 0; z-index: 50; background: var(--bg); display: flex; align-items: center; justify-content: center; padding: 24px; transition: opacity .4s ease; }
+  .quiz.hide { opacity: 0; pointer-events: none; }
+  body.quiz-open { overflow: hidden; }
+  .quiz-card { width: 100%; max-width: 540px; text-align: center; }
+  .quiz-progress { display: flex; gap: 8px; justify-content: center; margin-bottom: 40px; }
+  .quiz-progress .dot { width: 26px; height: 5px; border-radius: 3px; background: var(--line); transition: background .3s; }
+  .quiz-progress .dot.on { background: var(--ink); }
+  .quiz-progress .dot.done { background: var(--free); }
+  .quiz-q { font-size: 30px; font-weight: 800; letter-spacing: -0.02em; margin: 0 0 10px; }
+  .quiz-sub { color: var(--muted); font-size: 16px; margin: 0 auto 34px; max-width: 420px; }
+  .quiz-body { margin-bottom: 38px; min-height: 130px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; }
+  .q-input { font-size: 22px; padding: 14px 18px; border: 1px solid var(--line); border-radius: 12px; text-align: center; font-family: inherit; background: #fff; }
+  .q-bignum { font-size: 22px; font-weight: 300; color: var(--muted); }
+  .q-bignum b { font-size: 56px; font-weight: 800; color: var(--ink); }
+  .quiz-body input[type="range"] { width: 100%; max-width: 380px; }
+  .q-tally { color: var(--free); font-weight: 700; font-size: 16px; margin: 4px 0 0; min-height: 20px; }
+  .q-life { display: flex; flex-direction: column; gap: 20px; align-items: center; }
+  .q-seg { display: inline-flex; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+  .q-seg button { padding: 12px 30px; border: none; background: #fff; font-size: 16px; font-family: inherit; cursor: pointer; }
+  .q-seg button.sel { background: var(--ink); color: #fff; }
+  .q-age { display: flex; align-items: center; gap: 10px; font-size: 16px; color: var(--muted); }
+  .q-age input { font-size: 22px; padding: 12px 14px; width: 100px; text-align: center; border: 1px solid var(--line); border-radius: 12px; font-family: inherit; }
+  .quiz-nav { display: flex; justify-content: space-between; gap: 12px; }
+  .quiz-nav .btn { min-width: 120px; }
+
+  /* health / lifestyle */
+  .le-est { float: right; font-weight: 700; color: #157a4a; text-transform: none; letter-spacing: 0; }
+  .hrow { display: flex; align-items: center; gap: 10px; padding: 5px 0; }
+  .hrow .hlabel { width: 62px; flex: none; font-size: 14px; }
+  .hseg { display: flex; flex: 1; border: 1px solid var(--line); border-radius: 9px; overflow: hidden; }
+  .hseg button { flex: 1; padding: 7px 4px; border: none; border-left: 1px solid var(--line); background: #fff; font-size: 12px; font-family: inherit; cursor: pointer; color: var(--ink); line-height: 1.2; }
+  .hseg button:first-child { border-left: none; }
+  .hseg button.sel { background: var(--ink); color: #fff; }
+  .q-choices { display: flex; flex-direction: column; gap: 10px; width: 100%; max-width: 380px; }
+  .q-choices button { padding: 15px 18px; border: 1px solid var(--line); border-radius: 12px; background: #fff; font-size: 16px; font-family: inherit; cursor: pointer; transition: all .15s; }
+  .q-choices button:hover { border-color: #c9c2b5; }
+  .q-choices button.sel { border-color: var(--ink); background: var(--ink); color: #fff; }
+  .q-avg { font-size: 13px; color: var(--muted); margin-top: 2px; }
+
+  /* collapsible panel sections */
+  .acc { border-top: 1px solid var(--line); }
+  .acc-head { width: 100%; display: flex; align-items: center; gap: 10px; padding: 16px 0 6px; background: none; border: none; cursor: pointer; font-family: inherit; }
+  .acc-title { font-size: 13px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); font-weight: 700; margin-right: auto; text-align: left; }
+  .acc-sum { font-size: 13px; font-weight: 700; color: #157a4a; }
+  .acc-chev { font-size: 11px; color: var(--muted); transition: transform .2s; }
+  .acc.open .acc-chev { transform: rotate(90deg); }
+  .acc-body { display: none; padding: 6px 0 12px; }
+  .acc.open .acc-body { display: block; }
+</style>
+</head>
+<body>
+<div class="quiz" id="quiz">
+  <div class="quiz-card">
+    <div class="quiz-progress" id="quizProgress"></div>
+    <h2 class="quiz-q" id="quizQ"></h2>
+    <p class="quiz-sub" id="quizSub"></p>
+    <div class="quiz-body" id="quizBody"></div>
+    <div class="quiz-nav">
+      <button class="btn" id="quizBack">&larr; Back</button>
+      <button class="btn primary" id="quizNext">Next &rarr;</button>
+    </div>
+  </div>
+</div>
+<div class="wrap">
+  <header>
+    <h1>Your Life in Weeks</h1>
+    <p class="sub">Every square is one week. See how much is already behind you &mdash; and where the rest goes.</p>
+  </header>
+
+  <main class="stage">
+    <div class="summary">
+      <div class="reveal-lead">
+        <div class="reveal-label">Statistically, you'll live to around</div>
+        <div class="reveal-age"><span id="revealAge">0</span> <span class="reveal-yo">years old</span></div>
+      </div>
+      <ul class="reveal-bullets">
+        <li>You've already lived <b id="bWeeks">0</b> weeks.</li>
+        <li>That's about <b id="bPct">0%</b> of your life, already behind you.</li>
+        <li>Roughly <b id="bYearsLeft">0</b> years, or about <b id="bWeeksLeft">0</b> weeks, are still ahead.</li>
+        <li class="warn" id="bPhone">&nbsp;</li>
+      </ul>
+      <div class="hero" id="hero">
+        <div class="hero-label">That leaves you, awake and free</div>
+        <div class="hero-num"><span id="freeYears">0</span> years</div>
+        <div class="hero-sub">about <b id="freeDays">0</b> full free days &middot; <b id="freeWeeks">0</b> weeks for everything that actually matters</div>
+      </div>
+    </div>
+
+    <div class="view-toggle" id="viewToggle">
+      <button type="button" data-view="weeks" class="sel">Weeks</button>
+      <button type="button" data-view="months">Months</button>
+    </div>
+    <p class="chart-cap" id="chartCap">Each row is one year &middot; left-to-right = the 52 weeks of that year</p>
+    <div class="legend" id="legend"></div>
+    <div class="chart" id="chart"></div>
+
+    <div class="actions">
+      <button class="btn primary" id="shareBtn" disabled>Download my image &mdash; coming next</button>
+      <button class="btn" id="linkBtn">Copy shareable link</button>
+    </div>
+    <div class="sub-actions">
+      <button class="link-btn" id="adjustBtn" type="button">Adjust my answers</button>
+      <span class="dot-sep">&middot;</span>
+      <button class="link-btn" id="retake" type="button">Start over</button>
+    </div>
+
+    <aside class="panel" id="panel">
+      <div class="field">
+        <label for="bday">Your birthday</label>
+        <input type="date" id="bday" value="1985-06-15" />
+      </div>
+      <div class="field">
+        <label for="sex">Sex</label>
+        <select id="sex">
+          <option value="female">Female</option>
+          <option value="male" selected>Male</option>
+        </select>
+      </div>
+      <input type="hidden" id="le" value="79" />
+
+      <div class="acc" id="accHealth">
+        <button class="acc-head" type="button" data-acc="accHealth">
+          <span class="acc-title">Health &amp; lifestyle</span>
+          <span class="acc-sum" id="leEst"></span>
+          <span class="acc-chev">&#9656;</span>
+        </button>
+        <div class="acc-body">
+          <div id="healthInline"></div>
+          <p class="hint" style="margin-top:8px;">Rough estimates from population studies &mdash; not medical advice.</p>
+        </div>
+      </div>
+
+      <div class="acc open" id="accHabits">
+        <button class="acc-head" type="button" data-acc="accHabits">
+          <span class="acc-title">How you spend a typical day</span>
+          <span class="acc-chev">&#9656;</span>
+        </button>
+        <div class="acc-body">
+          <p class="hint">Check what applies, then drag each to match your real habits.</p>
+          <div id="toggleList"></div>
+        </div>
+      </div>
+    </aside>
+  </main>
+  <footer style="max-width:560px;margin:48px auto 12px;padding:0 18px;text-align:center;font-size:12px;color:var(--muted);line-height:1.7">
+    <a href="https://www.northresults.com/tos" target="_blank" rel="noopener noreferrer" style="color:var(--muted);text-decoration:underline;margin:0 9px">Terms</a>
+    <a href="https://www.northresults.com/privacy" target="_blank" rel="noopener noreferrer" style="color:var(--muted);text-decoration:underline;margin:0 9px">Privacy Policy</a>
+    <a href="https://membershipworkshop.com/hubfs/resources/tme/Earnings%20Disclaimer.pdf" target="_blank" rel="noopener noreferrer" style="color:var(--muted);text-decoration:underline;margin:0 9px">Earnings Disclaimer</a>
+    <div style="margin-top:10px">© 2026 North Results Inc. · All rights reserved.</div>
+  </footer>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const WEEKS_PER_YEAR = 52;
+
+// fraction of total time = hoursPerDay/24 * daysPerWeek/7
+const CONSUMERS = [
+  { id: 'sleep',   label: 'Sleep',            color: '#7c8aa5', hours: 7, avg: 7, min: 3, max: 12, step: 0.5,  days: 7, unit: 'hrs / night',   on: true },
+  { id: 'phone',   label: 'Phone / screens',  color: '#e25c45', hours: 4, avg: 4, min: 0, max: 14, step: 0.5,  days: 7, unit: 'hrs / day',     on: true },
+  { id: 'work',    label: 'Work',             color: '#caa75a', hours: 8, avg: 8, min: 0, max: 16, step: 0.5,  days: 5, unit: 'hrs / workday', on: true },
+  { id: 'commute', label: 'Commute',          color: '#a890c4', hours: 1, avg: 1, min: 0, max: 5,  step: 0.25, days: 5, unit: 'hrs / workday', on: false },
+  { id: 'eating',  label: 'Eating',           color: '#7fae86', hours: 1, avg: 1, min: 0, max: 4,  step: 0.25, days: 7, unit: 'hrs / day',     on: false },
+  { id: 'chores',  label: 'Chores & errands', color: '#c98fb0', hours: 1, avg: 1, min: 0, max: 5,  step: 0.25, days: 7, unit: 'hrs / day',     on: false },
+];
+
+const $ = (id) => document.getElementById(id);
+const state = {};
+
+// life-expectancy baselines (years) and lifestyle adjustments
+const LE_BASE = { male: 76, female: 81 };
+const HEALTH = [
+  { id: 'smoking',  label: 'Smoking',  sel: 'never',
+    options: [ { v: 'never', t: 'Never', d: 0 }, { v: 'former', t: 'I quit', d: -3 }, { v: 'current', t: 'Yes', d: -10 } ] },
+  { id: 'alcohol',  label: 'Alcohol',  sel: 'social',
+    options: [ { v: 'never', t: 'Never', d: 1 }, { v: 'rare', t: 'Rarely', d: 1 }, { v: 'social', t: 'Socially', d: 0 }, { v: 'daily', t: 'Daily', d: -3 } ] },
+  { id: 'diet',     label: 'Diet',     sel: 'average',
+    options: [ { v: 'healthy', t: 'Healthy', d: 2 }, { v: 'average', t: 'Average', d: 0 }, { v: 'poor', t: 'Poor', d: -3 } ] },
+  { id: 'exercise', label: 'Exercise', sel: 'some',
+    options: [ { v: 'active', t: 'Most days', d: 3 }, { v: 'some', t: 'Sometimes', d: 0 }, { v: 'rare', t: 'Rarely', d: -2 } ] },
+];
+
+function healthDelta() {
+  return HEALTH.reduce((s, h) => { const o = h.options.find((o) => o.v === h.sel); return s + (o ? o.d : 0); }, 0);
+}
+function estimateLE() { return Math.max(40, Math.round((LE_BASE[$('sex').value] || 78) + healthDelta())); }
+function applyEstimate() { $('le').value = estimateLE(); }
+
+function readURL() {
+  const p = new URLSearchParams(location.search);
+  if (p.get('b')) $('bday').value = p.get('b');
+  if (p.get('s')) $('sex').value = p.get('s');
+  if (p.get('h')) {
+    const hs = p.get('h').split('_');
+    CONSUMERS.forEach((c, i) => { if (hs[i] !== undefined && hs[i] !== '') c.hours = parseFloat(hs[i]); });
+  }
+  if (p.get('on')) {
+    const set = new Set(p.get('on').split(','));
+    CONSUMERS.forEach(c => c.on = set.has(c.id));
+  }
+  if (p.get('hl')) {
+    p.get('hl').split(',').forEach((pair) => {
+      const [id, v] = pair.split('-');
+      const h = HEALTH.find((x) => x.id === id);
+      if (h && h.options.some((o) => o.v === v)) h.sel = v;
+    });
+  }
+}
+
+function writeURL() {
+  const p = new URLSearchParams();
+  p.set('b', $('bday').value);
+  p.set('s', $('sex').value);
+  p.set('le', $('le').value);
+  p.set('h', CONSUMERS.map(c => c.hours).join('_'));
+  p.set('on', CONSUMERS.filter(c => c.on).map(c => c.id).join(','));
+  p.set('hl', HEALTH.map((h) => h.id + '-' + h.sel).join(','));
+  history.replaceState(null, '', '?' + p.toString());
+}
+
+function buildToggles() {
+  const list = $('toggleList');
+  list.innerHTML = '';
+  CONSUMERS.forEach(c => {
+    const row = document.createElement('div');
+    row.className = 'consumer' + (c.on ? ' on' : '');
+    row.innerHTML =
+      `<label class="consumer-head">` +
+        `<input type="checkbox" ${c.on ? 'checked' : ''}/>` +
+        `<span class="swatch" style="background:${c.color}"></span>` +
+        `<span class="cname">${c.label}</span>` +
+        `<span class="amt" id="amt-${c.id}"></span>` +
+      `</label>` +
+      `<div class="consumer-slider">` +
+        `<input type="range" min="${c.min}" max="${c.max}" step="${c.step}" value="${c.hours}" style="accent-color:${c.color}"/>` +
+        `<span class="val"><b id="val-${c.id}">${c.hours}</b> ${c.unit}</span>` +
+      `</div>`;
+    row.querySelector('input[type="checkbox"]').addEventListener('change', (e) => {
+      c.on = e.target.checked;
+      row.classList.toggle('on', c.on);
+      render();
+    });
+    row.querySelector('input[type="range"]').addEventListener('input', (e) => {
+      c.hours = parseFloat(e.target.value);
+      render();
+    });
+    list.appendChild(row);
+  });
+}
+
+function buildHealthInline() {
+  const box = $('healthInline');
+  box.innerHTML = '';
+  HEALTH.forEach((h) => {
+    const row = document.createElement('div');
+    row.className = 'hrow';
+    row.innerHTML =
+      `<span class="hlabel">${h.label}</span>` +
+      `<div class="hseg">` +
+      h.options.map((o) => `<button data-id="${h.id}" data-v="${o.v}" class="${h.sel === o.v ? 'sel' : ''}">${o.t}</button>`).join('') +
+      `</div>`;
+    box.appendChild(row);
+  });
+  box.querySelectorAll('button').forEach((b) => b.addEventListener('click', () => {
+    const h = HEALTH.find((x) => x.id === b.dataset.id);
+    h.sel = b.dataset.v;
+    box.querySelectorAll(`button[data-id="${h.id}"]`).forEach((x) => x.classList.toggle('sel', x === b));
+    applyEstimate();
+    render();
+  }));
+}
+
+function fmt(n) { return n.toLocaleString('en-US'); }
+function yrs(weeks) { return (weeks / WEEKS_PER_YEAR); }
+let view = 'weeks';
+
+function render() {
+  const le = Math.max(40, Math.min(120, parseInt($('le').value || '79', 10)));
+  const birth = new Date($('bday').value + 'T00:00:00');
+  const now = new Date();
+
+  const rows = Math.ceil(le);
+  const totalWeeks = rows * WEEKS_PER_YEAR;
+  let weeksLived = 0;
+  if (!isNaN(birth.getTime())) {
+    weeksLived = Math.max(0, Math.floor((now - birth) / (7 * 24 * 3600 * 1000)));
+  }
+  weeksLived = Math.min(weeksLived, totalWeeks);
+  const weeksLeft = totalWeeks - weeksLived;
+
+  // fraction of total time for each enabled consumer, applied to remaining weeks
+  const buckets = [];
+  CONSUMERS.forEach(c => {
+    const valEl = $('val-' + c.id);
+    if (valEl) valEl.textContent = c.hours;
+    if (!c.on) return;
+    const frac = (c.hours / 24) * (c.days / 7);
+    buckets.push({ ...c, frac });
+  });
+  // clamp combined fraction to 1 so we never over-allocate the remaining life
+  let totalFrac = buckets.reduce((s, b) => s + b.frac, 0);
+  const scale = totalFrac > 1 ? 1 / totalFrac : 1;
+  let allocated = 0;
+  buckets.forEach(b => {
+    b.weeks = Math.round(b.frac * scale * weeksLeft);
+    allocated += b.weeks;
+  });
+  if (allocated > weeksLeft) { buckets[buckets.length - 1].weeks -= (allocated - weeksLeft); allocated = weeksLeft; }
+  const freeWeeks = weeksLeft - allocated;
+
+  // ---- chart (view-dependent: weeks = 1 row/yr · months = 3 yrs/row) ----
+  const COLS = view === 'months' ? 36 : 52;
+  const UPY = view === 'months' ? 12 : 52;            // units per year
+  const msPerUnit = view === 'months' ? (365.25 / 12 * 86400000) : (7 * 86400000);
+  const yearsPerRow = COLS / UPY;
+  const labelStep = view === 'months' ? 5 : 10;
+  const chartTotal = Math.round(le * UPY);
+  let chartLived = isNaN(birth.getTime()) ? 0 : Math.max(0, Math.floor((now - birth) / msPerUnit));
+  chartLived = Math.min(chartLived, chartTotal);
+  const chartLeft = chartTotal - chartLived;
+
+  // allocate the future units to each consumer using the same fractions
+  const chartColors = new Array(chartLeft);
+  let cc = 0;
+  buckets.forEach(b => {
+    const u = Math.round(b.frac * scale * chartLeft);
+    for (let i = 0; i < u && cc < chartLeft; i++) chartColors[cc++] = b.color;
+  });
+  // remaining stays undefined => free time (green via .free class)
+
+  const chart = $('chart');
+  chart.innerHTML = '';
+  const frag = document.createDocumentFragment();
+  let idx = 0;
+  for (let r = 0; idx < chartTotal; r++) {
+    const rowEl = document.createElement('div');
+    rowEl.className = 'grow';
+    const age = document.createElement('div');
+    age.className = 'age';
+    age.textContent = (r % labelStep === 0) ? Math.round(r * yearsPerRow) : '';
+    rowEl.appendChild(age);
+    const wk = document.createElement('div');
+    wk.className = 'weeks';
+    wk.style.gridTemplateColumns = `repeat(${COLS}, 1fr)`;
+    for (let c = 0; c < COLS && idx < chartTotal; c++) {
+      const cell = document.createElement('div');
+      cell.className = 'cell';
+      if (idx < chartLived) {
+        cell.classList.add('lived');
+      } else {
+        const col = chartColors[idx - chartLived];
+        if (col) cell.style.background = col;
+        else cell.classList.add('free');
+      }
+      wk.appendChild(cell);
+      idx++;
+    }
+    rowEl.appendChild(wk);
+    frag.appendChild(rowEl);
+  }
+  chart.appendChild(frag);
+
+  $('chartCap').textContent = view === 'months'
+    ? 'Each row is three years · left-to-right = 36 months'
+    : 'Each row is one year · left-to-right = the 52 weeks of that year';
+
+  // headline
+  const pctLived = (weeksLived / totalWeeks) * 100;
+  $('revealAge').textContent = le;
+  $('bWeeks').textContent = fmt(weeksLived);
+  $('bWeeksLeft').textContent = fmt(weeksLeft);
+  $('bYearsLeft').textContent = yrs(weeksLeft).toFixed(0);
+  $('bPct').textContent = `${pctLived.toFixed(0)}%`;
+  const phoneBucket = buckets.find(b => b.id === 'phone');
+  const bPhone = $('bPhone');
+  if (phoneBucket) {
+    bPhone.style.display = '';
+    bPhone.innerHTML = `Your phone alone will consume about <b>${yrs(phoneBucket.weeks).toFixed(1)} years</b> of what's left.`;
+  } else {
+    bPhone.style.display = 'none';
+  }
+
+  $('freeYears').textContent = yrs(freeWeeks).toFixed(1);
+  $('freeWeeks').textContent = fmt(freeWeeks);
+  $('freeDays').textContent = fmt(Math.round(freeWeeks * 7));
+  const estEl = $('leEst');
+  if (estEl) estEl.textContent = `→ ~${le} yrs est.`;
+
+  // legend + per-toggle amounts
+  const legend = $('legend');
+  legend.innerHTML = '';
+  const legItems = [
+    { color: 'var(--lived)', label: 'Lived', weeks: weeksLived },
+    ...buckets.map(b => ({ color: b.color, label: b.label, weeks: b.weeks })),
+    { color: 'var(--free)', label: 'Free / yours', weeks: freeWeeks },
+  ];
+  legItems.forEach(it => {
+    const el = document.createElement('div');
+    el.className = 'item';
+    el.innerHTML = `<span class="swatch" style="background:${it.color}"></span><span>${it.label}</span>`;
+    legend.appendChild(el);
+  });
+  CONSUMERS.forEach(c => {
+    const amt = $('amt-' + c.id);
+    if (!amt) return;
+    const b = buckets.find(x => x.id === c.id);
+    amt.textContent = b ? `${yrs(b.weeks).toFixed(1)} yrs` : '';
+  });
+
+  writeURL();
+}
+
+function toast(msg) {
+  const t = $('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 1800);
+}
+
+// ---------- guided quiz ----------
+const QUIZ = [
+  { type: 'date',   q: 'When were you born?',                       sub: 'Takes about a minute. Each square on the next screen is one week of your life.' },
+  { type: 'life',   q: 'What is your gender?',                      sub: 'We estimate your lifespan from real statistics — no guessing needed.' },
+  { type: 'health', cid: 'smoking', q: 'Do you smoke?',                     sub: "It's the single biggest lifestyle factor for lifespan." },
+  { type: 'health', cid: 'alcohol', q: 'How often do you drink alcohol?',   sub: 'A rough ballpark is fine.' },
+  { type: 'health', cid: 'diet',    q: 'How would you describe your diet?', sub: 'Be honest with yourself.' },
+  { type: 'health', cid: 'exercise', q: 'How often do you exercise?',       sub: 'Even a brisk walk most days counts.' },
+  { type: 'slider', cid: 'sleep',   q: 'How many hours do you sleep each night?',   sub: 'Most people land between 6 and 8.' },
+  { type: 'slider', cid: 'phone',   q: 'How much screen time on a typical day?',    sub: "Peek at your phone's Screen Time if you're not sure." },
+  { type: 'slider', cid: 'work',    q: 'How many hours do you work on a workday?',  sub: 'Count the real hours, not just the scheduled ones.' },
+  { type: 'slider', cid: 'commute', q: 'How long do you spend commuting each day?', sub: "Round-trip, on days you travel. Slide to 0 if you don't." },
+];
+let qIndex = 0;
+
+function renderQuiz() {
+  const step = QUIZ[qIndex];
+  const body = $('quizBody');
+  if (step.type === 'date') {
+    body.innerHTML = `<input type="date" id="q-bday" class="q-input" value="${$('bday').value}"/>`;
+    $('q-bday').addEventListener('input', (e) => { $('bday').value = e.target.value; render(); });
+  } else if (step.type === 'life') {
+    body.innerHTML =
+      `<div class="q-seg" id="q-sex">
+         <button data-sex="female" class="${$('sex').value === 'female' ? 'sel' : ''}">Female</button>
+         <button data-sex="male" class="${$('sex').value === 'male' ? 'sel' : ''}">Male</button>
+       </div>`;
+    applyEstimate();
+    document.querySelectorAll('#q-sex button').forEach((b) => b.addEventListener('click', () => {
+      $('sex').value = b.dataset.sex;
+      document.querySelectorAll('#q-sex button').forEach((x) => x.classList.toggle('sel', x === b));
+      applyEstimate();
+      render();
+    }));
+  } else if (step.type === 'slider') {
+    const c = CONSUMERS.find((x) => x.id === step.cid);
+    c.on = true;
+    body.innerHTML =
+      `<div class="q-bignum"><b id="q-val">${c.hours}</b> ${c.unit}</div>
+       <input type="range" id="q-slider" min="${c.min}" max="${c.max}" step="${c.step}" value="${c.hours}" style="accent-color:${c.color}"/>
+       <div class="q-avg">Most people land around ${c.avg} ${c.unit}</div>`;
+    const upd = (v) => {
+      c.hours = parseFloat(v);
+      $('q-val').textContent = c.hours;
+      render();
+    };
+    $('q-slider').addEventListener('input', (e) => upd(e.target.value));
+    upd(c.hours);
+  } else if (step.type === 'health') {
+    const h = HEALTH.find((x) => x.id === step.cid);
+    body.innerHTML =
+      `<div class="q-choices" id="q-health">` +
+      h.options.map((o) => `<button data-v="${o.v}" class="${h.sel === o.v ? 'sel' : ''}">${o.t}</button>`).join('') +
+      `</div>`;
+    const upd = () => { applyEstimate(); render(); };
+    document.querySelectorAll('#q-health button').forEach((b) => b.addEventListener('click', () => {
+      h.sel = b.dataset.v;
+      document.querySelectorAll('#q-health button').forEach((x) => x.classList.toggle('sel', x === b));
+      upd();
+    }));
+    upd();
+  }
+  $('quizQ').textContent = step.q;
+  $('quizSub').textContent = step.sub;
+  $('quizProgress').innerHTML = QUIZ.map((_, i) =>
+    `<span class="dot ${i === qIndex ? 'on' : ''} ${i < qIndex ? 'done' : ''}"></span>`).join('');
+  $('quizBack').style.visibility = qIndex === 0 ? 'hidden' : 'visible';
+  $('quizNext').textContent = qIndex === QUIZ.length - 1 ? 'See my life →' : 'Next →';
+}
+
+function startQuiz() {
+  qIndex = 0;
+  const ov = $('quiz');
+  ov.style.display = 'flex';
+  ov.classList.remove('hide');
+  document.body.classList.add('quiz-open');
+  renderQuiz();
+}
+
+function finishQuiz() {
+  buildToggles();
+  buildHealthInline();
+  $('panel').classList.remove('open');
+  render();
+  const ov = $('quiz');
+  ov.classList.add('hide');
+  document.body.classList.remove('quiz-open');
+  setTimeout(() => { ov.style.display = 'none'; }, 450);
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  const age = $('revealAge');
+  age.classList.remove('pulse');
+  void age.offsetWidth;
+  age.classList.add('pulse');
+}
+
+// ---------- wire up ----------
+const arrivedShared = location.search.length > 1;
+readURL();
+buildToggles();
+buildHealthInline();
+$('bday').addEventListener('input', render);
+$('sex').addEventListener('change', () => { applyEstimate(); render(); });
+document.querySelectorAll('.acc-head').forEach((h) => h.addEventListener('click', () => {
+  $(h.dataset.acc).classList.toggle('open');
+}));
+$('linkBtn').addEventListener('click', () => {
+  navigator.clipboard?.writeText(location.href);
+  toast('Link copied — opens straight to this chart');
+});
+$('retake').addEventListener('click', startQuiz);
+document.querySelectorAll('#viewToggle button').forEach((b) => b.addEventListener('click', () => {
+  view = b.dataset.view;
+  document.querySelectorAll('#viewToggle button').forEach((x) => x.classList.toggle('sel', x === b));
+  render();
+}));
+$('adjustBtn').addEventListener('click', () => {
+  const p = $('panel');
+  p.classList.toggle('open');
+  if (p.classList.contains('open')) p.scrollIntoView({ behavior: 'smooth', block: 'start' });
+});
+$('quizNext').addEventListener('click', () => {
+  if (qIndex < QUIZ.length - 1) { qIndex++; renderQuiz(); } else { finishQuiz(); }
+});
+$('quizBack').addEventListener('click', () => { if (qIndex > 0) { qIndex--; renderQuiz(); } });
+
+applyEstimate();
+render();
+
+if (arrivedShared) {
+  $('quiz').style.display = 'none';
+} else {
+  startQuiz();
+}
+</script>
+</body>
+</html>
