@@ -1,0 +1,9 @@
+{
+  "name": "life-in-weeks",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Memento-mori web tool with Reclaim Guide opt-in",
+  "engines": {
+    "node": ">=20"
+  }
+}

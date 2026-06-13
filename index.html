@@ -836,9 +836,10 @@ function render() {
 }
 
 // ---------- Reclaim Guide opt-in ----------
-// TODO: paste your Formspree endpoint here once you sign up at https://formspree.io
-// (30 seconds — free, no credit card. Until then submissions land in console + localStorage.)
-const RECLAIM_ENDPOINT = '';
+// Submissions POST to our own /api/subscribe Vercel function,
+// which creates a contact on Membership.io (api.member.dev) server-side
+// using env vars MEMBERSHIP_TEAM_ID and MEMBERSHIP_API_KEY.
+const RECLAIM_ENDPOINT = '/api/subscribe';
 
 function setupAskBlock() {
   const form = $('askForm');
